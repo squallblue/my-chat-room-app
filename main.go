@@ -27,7 +27,7 @@ func main() {
 	}()
 
 	os.Setenv("FYNE_FONT", "msyhl.ttc")
-	cmd := exec.Command("git", "config", "--global",  "user.name")
+	cmd := exec.Command("git", "config", "--global", "user.name")
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Run()
@@ -35,7 +35,7 @@ func main() {
 	name = strings.Trim(string(out), "\n")
 	name = strings.Trim(string(out), "\r\n")
 	if name == "" {
-		 log.Println("please init your git name first:\ngit config --global user.name \"yourName\"")
+		log.Println("please init your git name first:\ngit config --global user.name \"yourName\"")
 	}
 
 	a := app.New()
@@ -43,16 +43,19 @@ func main() {
 	w.Resize(fyne.NewSize(400, 2))
 	entry := widget.NewEntry()
 	entry.SetPlaceHolder("your context")
+	entry.OnSubmitted = func(s string) {
+		if entry.Text != "" {
+			conn = mq.GetConnection()
+			defer conn.Disconnect()
+			mq.SendMessage([]byte(name+" : "+entry.Text), destination, conn)
+			entry.SetText("")
+		}
+	}
 	w.SetContent(container.NewVBox(
 		//layout.NewGridLayout(12),
 		entry,
 		widget.NewButton("SEND", func() {
-			if entry.Text != "" {
-				conn = mq.GetConnection()
-				defer conn.Disconnect()
-				mq.SendMessage([]byte(name + " : " + entry.Text), destination, conn)
-				entry.SetText("")
-			}
+			entry.OnSubmitted("")
 		}),
 	))
 	w.ShowAndRun()
